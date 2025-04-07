@@ -94,4 +94,4 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Secret: ${{ secrets.WEBHOOK_SECRET }}" \
             -d '{"version": "'${{ env.VERSION }}'"}' \
-            https://${{ secrets.SSH_HOST }}/update-${{ github.event.repository.name }}
+            https://${{ secrets.SSH_HOST }}:${{ secrets.WEBHOOK_PORT }}/update-${{ github.event.repository.name }}
