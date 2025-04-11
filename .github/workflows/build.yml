@@ -96,4 +96,3 @@ jobs:
             -H "Secret: ${{ secrets.WEBHOOK_SECRET }}" \
             -d '{"version": "'${{ env.VERSION }}'"}' \
             https://${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }}/update-${{ github.event.repository.name }}
-
