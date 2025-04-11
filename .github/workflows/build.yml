@@ -1,11 +1,99 @@
-name: CI
+name: Build, tag and deploy
+# https://theawesomegarage.com/blog/build-and-deploy-locally-using-github-actions-and-webhooks
+# TODO: check 
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write   # allows pushing Git tags
+  packages: write   # allows pushing to GHCR
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: self-hosted
     steps:
-    - uses: actions/checkout@v2
-    - name: Run a one-line script
-      run: echo "Hello, world!"
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Determine next version from last tag
+        id: semver
+        run: |
+          # Fetch all tags (sometimes needed explicitly)
+          git fetch --tags --prune
+
+          # Get the latest tag, or 0.0.0 if none
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+
+          MAJOR=$(echo "$LATEST_TAG" | cut -d '.' -f 1)
+          MINOR=$(echo "$LATEST_TAG" | cut -d '.' -f 2)
+          PATCH=$(echo "$LATEST_TAG" | cut -d '.' -f 3)
+
+          NEXT_MAJOR=$MAJOR
+          NEXT_MINOR=$MINOR
+          NEXT_PATCH=$((PATCH + 1))
+
+          # Check commit message for [major] or [minor]
+          if [[ "${{ github.event.head_commit.message }}" =~ \[major\] ]]; then
+            NEXT_MAJOR=$((MAJOR + 1))
+            NEXT_MINOR=0
+            NEXT_PATCH=0
+          elif [[ "${{ github.event.head_commit.message }}" =~ \[minor\] ]]; then
+            NEXT_MINOR=$((MINOR + 1))
+            NEXT_PATCH=0
+          fi
+
+          NEXT_VERSION="${NEXT_MAJOR}.${NEXT_MINOR}.${NEXT_PATCH}"
+          echo "Computed next version: $NEXT_VERSION"
+
+          # Export variables
+          echo "VERSION=$NEXT_VERSION" >> $GITHUB_ENV
+          echo "MAJOR=$NEXT_MAJOR" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ github.event.repository.name }}:build -f Dockerfile .
+
+      - name: Tag Docker image
+        run: |
+          echo "Tagging image with version $VERSION ..."
+          docker tag ${{ github.event.repository.name }}:build ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:${{ env.VERSION }}
+          docker tag ${{ github.event.repository.name }}:build ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:v${{ env.MAJOR }}
+
+      - name: Login to GitHub Container Registry
+        if: always()
+        run: |
+          echo "${{ secrets.PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:${{ env.VERSION }}
+          docker push ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:v${{ env.MAJOR }}
+
+      - name: Push new Git tag
+        run: |
+          # Configure Git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create and push the new tag
+          git tag "${{ env.VERSION }}" -m "ci: release version ${{ env.VERSION }}"
+          git push origin "${{ env.VERSION }}"
+
+      - name: Trigger production update
+        run: |
+          curl -X POST \
+            -k \
+            -H "Content-Type: application/json" \
+            -H "Secret: ${{ secrets.WEBHOOK_SECRET }}" \
+            -d '{"version": "'${{ env.VERSION }}'"}' \
+            https://${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }}/update-${{ github.event.repository.name }}
+
