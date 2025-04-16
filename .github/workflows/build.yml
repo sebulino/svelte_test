@@ -58,23 +58,23 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ github.repository }}:build -f Dockerfile .
+          docker build -t svelte_app:build -f Dockerfile .
 
       - name: Tag Docker image
         run: |
           echo "Tagging image with version $VERSION ..."
-          docker tag ${{ github.repository }}:build ${{ github.actor }}/${{ github.actor }}/${{ github.repository }}:${{ env.VERSION }}
-          docker tag ${{ github.repository }}:build ${{ github.actor }}/${{ github.actor }}/${{ github.repository }}:v${{ env.MAJOR }}
+          docker tag svelte_app:build ghcr.io/${{ github.repository }}:${{ env.VERSION }}
+          docker tag svelte_app:build ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
 
       - name: Login to GitHub Container Registry
         if: always()
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ github.repository }} -u $GITHUB_ACTOR --password-stdin
+          echo "${{ secrets.PAT }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
       - name: Push Docker image
         run: |
-          docker push ${{ github.actor }}/${{ github.actor }}/${{ github.repository }}:${{ env.VERSION }}
-          docker push ${{ github.actor }}/${{ github.actor }}/${{ github.repository }}:v${{ env.MAJOR }}
+          docker push ghcr.io/${{ github.repository }}:${{ env.VERSION }}
+          docker push ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
 
       - name: Push new Git tag
         run: |
