@@ -54,7 +54,7 @@ jobs:
           echo "MAJOR=$NEXT_MAJOR" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v2 
 
       - name: Build Docker image
         run: |
@@ -62,7 +62,7 @@ jobs:
 
       - name: Tag Docker image
         run: |
-          echo "Tagging image with version $VERSION ..."
+          echo "Tagging image with version ${{ env.VERSION }} ..."
           docker tag svelte_test:build ghcr.io/${{ github.repository }}:${{ env.VERSION }}
           docker tag svelte_test:build ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
 
