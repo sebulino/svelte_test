@@ -1,6 +1,4 @@
 name: Build, tag and deploy
-# https://theawesomegarage.com/blog/build-and-deploy-locally-using-github-actions-and-webhooks
-# TODO: check 
 
 on:
   push:
@@ -12,7 +10,7 @@ permissions:
   packages: write   # allows pushing to GHCR
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: self-hosted
     steps:
       - name: Check out repository
@@ -60,23 +58,23 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ github.event.repository.name }}:build -f Dockerfile .
+          docker build -t <image>:build -f Dockerfile .
 
       - name: Tag Docker image
         run: |
           echo "Tagging image with version $VERSION ..."
-          docker tag ${{ github.event.repository.name }}:build ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:${{ env.VERSION }}
-          docker tag ${{ github.event.repository.name }}:build ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:v${{ env.MAJOR }}
+          docker tag <image>:build ghcr.io/<github_org>/<image>:${{ env.VERSION }}
+          docker tag <image>:build ghcr.io/<github_org>/<image>:v${{ env.MAJOR }}
 
       - name: Login to GitHub Container Registry
         if: always()
         run: |
-          echo "${{ secrets.PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:${{ env.VERSION }}
-          docker push ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:v${{ env.MAJOR }}
+          docker push ghcr.io/<github_org>/<image>:${{ env.VERSION }}
+          docker push ghcr.io/<github_org>/<image>:v${{ env.MAJOR }}
 
       - name: Push new Git tag
         run: |
@@ -91,28 +89,7 @@ jobs:
       - name: Trigger production update
         run: |
           curl -X POST \
-            -k \
             -H "Content-Type: application/json" \
             -H "Secret: ${{ secrets.WEBHOOK_SECRET }}" \
             -d '{"version": "'${{ env.VERSION }}'"}' \
-            http://${{ secrets.SSH_HOST }}:${{ secrets.WEBHOOK_PORT }}/hooks/update-${{ github.event.repository.name }}
-
-     
-  deploy:
-    needs: publish
-    name: deploy image
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: install ssh keys
-      # check this thread to understand why its needed:
-      # https://stackoverflow.com/a/70447517
-      run: |
-          install -m 600 -D /dev/null ~/.ssh/id_rsa
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
-      - name: connect and pull
-      #run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git checkout ${{ secrets.MAIN_BRANCH }} && git pull && exit"
-      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "docker compose up -d prod""
-      - name: cleanup
-      run: rm -rf ~/.ssh
+            https://WEBHOOKS_DOMAIN/update-<repo-name>
