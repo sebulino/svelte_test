@@ -86,10 +86,14 @@ jobs:
           git tag "${{ env.VERSION }}" -m "ci: release version ${{ env.VERSION }}"
           git push origin "${{ env.VERSION }}"
 
-      - name: Trigger production update
+      - name: install ssh keys
+      # check this thread to understand why its needed:
+      # https://stackoverflow.com/a/70447517
         run: |
-          curl -X POST \
-            -H "Content-Type: application/json" \
-            -H "Secret: ${{ secrets.WEBHOOK_SECRET }}" \
-            -d '{"version": "'${{ env.VERSION }}'"}' \
-            https://WEBHOOKS_DOMAIN/update-<repo-name>
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
+      - name: connect and pull
+        run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "docker compose up -d prod"
+      - name: cleanup
+        run: rm -rf ~/.ssh
