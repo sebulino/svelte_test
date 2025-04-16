@@ -58,13 +58,13 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t svelte_app:build -f Dockerfile .
+          docker build -t svelte_test:build -f Dockerfile .
 
       - name: Tag Docker image
         run: |
           echo "Tagging image with version $VERSION ..."
-          docker tag svelte_app:build ghcr.io/${{ github.repository }}:${{ env.VERSION }}
-          docker tag svelte_app:build ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
+          docker tag svelte_test:build ghcr.io/${{ github.repository }}:${{ env.VERSION }}
+          docker tag svelte_test:build ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
 
       - name: Login to GitHub Container Registry
         if: always()
@@ -93,8 +93,5 @@ jobs:
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
-      - name: check
-        run: cat ~/.ssh/id_rsa 
-      
       - name: connect and pull
         run: ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "docker compose up -d prod"
