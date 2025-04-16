@@ -75,6 +75,7 @@ jobs:
         run: |
           docker push ghcr.io/${{ github.repository }}:${{ env.VERSION }}
           docker push ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
+          docker push ghcr.io/${{ github.repository }}:latest
 
       - name: Push new Git tag
         run: |
