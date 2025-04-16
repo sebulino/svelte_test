@@ -94,9 +94,7 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
       - name: check
-        run: echo ~/.ssh/id_rsa 
+        run: cat ~/.ssh/id_rsa 
       
       - name: connect and pull
         run: ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "docker compose up -d prod"
-      - name: cleanup
-        run: rm -rf ~/.ssh
