@@ -12,7 +12,7 @@ permissions:
   packages: write   # allows pushing to GHCR
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: self-hosted
     steps:
       - name: Check out repository
@@ -95,4 +95,24 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Secret: ${{ secrets.WEBHOOK_SECRET }}" \
             -d '{"version": "'${{ env.VERSION }}'"}' \
-            http://${{ secrets.SSH_HOST }}:${{ secrets.WEBHOOK_PORT }}/update-${{ github.event.repository.name }}
+            http://${{ secrets.SSH_HOST }}:${{ secrets.WEBHOOK_PORT }}/hooks/update-${{ github.event.repository.name }}
+
+     
+  deploy:
+    needs: publish
+    name: deploy image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: install ssh keys
+      # check this thread to understand why its needed:
+      # https://stackoverflow.com/a/70447517
+      run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
+      - name: connect and pull
+      #run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git checkout ${{ secrets.MAIN_BRANCH }} && git pull && exit"
+      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "docker compose up -d prod""
+      - name: cleanup
+      run: rm -rf ~/.ssh
