@@ -62,8 +62,9 @@ jobs:
       - name: Tag Docker image
         run: |
           echo "Tagging image with version ${{ env.VERSION }} ..."
-          docker tag svelte_test:build ghcr.io/${{ github.repository }} # :${{ env.VERSION }}
-          docker tag svelte_test:build ghcr.io/${{ github.repository }} # :v${{ env.MAJOR }}
+          docker tag svelte_test:build ghcr.io/${{ github.repository }}:${{ env.VERSION }}
+          docker tag svelte_test:build ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
+          docker tag svelte_test:build ghcr.io/${{ github.repository }}
 
       - name: Login to GitHub Container Registry
         if: always()
@@ -72,9 +73,9 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository }} # :${{ env.VERSION }}
-          docker push ghcr.io/${{ github.repository }} # :v${{ env.MAJOR }}
-          docker push ghcr.io/${{ github.repository }} # :latest
+          docker push ghcr.io/${{ github.repository }}:${{ env.VERSION }}
+          docker push ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
+          docker push ghcr.io/${{ github.repository }}
 
       - name: Push new Git tag
         run: |
