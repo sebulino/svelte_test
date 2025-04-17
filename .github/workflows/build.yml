@@ -2,7 +2,7 @@ name: Build, tag and deploy
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "update" ]
 
 permissions:
   contents: write   # allows pushing Git tags
@@ -64,12 +64,6 @@ jobs:
         docker tag svelte_test:build ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
         docker tag svelte_test:build ghcr.io/${{ github.repository }}
 
-  publish:  
-    needs: build
-    name: Publish Docker image
-    runs-on: self-hosted
-
-    steps:
     - name: Login to GitHub Container Registry
       if: always()
       run: |
@@ -91,12 +85,6 @@ jobs:
         # git tag "${{ env.VERSION }}" -m "ci: release version ${{ env.VERSION }}"
         # git push origin "${{ env.VERSION }}"
 
-  deploy:  
-    needs: publish
-    name: Update Docker image on server
-    runs-on: self-hosted
-
-    steps:
     - name: Install SSH keys
       # Check this thread to understand why it's needed:
       # https://stackoverflow.com/a/70447517
