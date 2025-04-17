@@ -2,8 +2,7 @@ name: Build, tag and deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main", "update"]
 
 permissions:
   contents: write   # allows pushing Git tags
@@ -63,8 +62,8 @@ jobs:
       - name: Tag Docker image
         run: |
           echo "Tagging image with version ${{ env.VERSION }} ..."
-          docker tag svelte_test:build ghcr.io/${{ github.repository }}:${{ env.VERSION }}
-          docker tag svelte_test:build ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
+          docker tag svelte_test:build ghcr.io/${{ github.repository }} # :${{ env.VERSION }}
+          docker tag svelte_test:build ghcr.io/${{ github.repository }} # :v${{ env.MAJOR }}
 
       - name: Login to GitHub Container Registry
         if: always()
@@ -73,9 +72,9 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository }}:${{ env.VERSION }}
-          docker push ghcr.io/${{ github.repository }}:v${{ env.MAJOR }}
-          docker push ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository }} # :${{ env.VERSION }}
+          docker push ghcr.io/${{ github.repository }} # :v${{ env.MAJOR }}
+          docker push ghcr.io/${{ github.repository }} # :latest
 
       - name: Push new Git tag
         run: |
@@ -84,8 +83,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Create and push the new tag
-          git tag "${{ env.VERSION }}" -m "ci: release version ${{ env.VERSION }}"
-          git push origin "${{ env.VERSION }}"
+          # git tag "${{ env.VERSION }}" -m "ci: release version ${{ env.VERSION }}"
+          # git push origin "${{ env.VERSION }}"
 
       - name: install ssh keys
       # check this thread to understand why its needed:
