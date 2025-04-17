@@ -4,7 +4,7 @@
 </svelte:head>
 
 <div class="text-column">
-	<h1>test for pulling patch</h1>
+	<h1>test - YOLO</h1>
 
 	<p>
 		This is a <a href="https://svelte.dev/docs/kit">SvelteKit</a> app. You can make your own by typing
